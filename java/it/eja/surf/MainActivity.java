@@ -1,6 +1,5 @@
 package it.eja.surf;
 
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
@@ -9,7 +8,6 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.text.InputType;
 import android.view.View;
@@ -20,6 +18,7 @@ import android.webkit.JsResult;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -39,6 +38,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.util.Locale;
 import java.util.UUID;
 
 public class MainActivity extends Activity {
@@ -132,49 +132,45 @@ public class MainActivity extends Activity {
                 swipe.setRefreshing(false);
             }
 
-            @SuppressWarnings("deprecation")
             @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                final Uri uri = Uri.parse(url);
-                try {
-                    return handleUri(uri);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                return false;
-            }
-
-            @TargetApi(Build.VERSION_CODES.N)
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-                final Uri uri = request.getUrl();
-                try {
-                    return handleUri(uri);
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-                return false;
-            }
-
-            private boolean handleUri(final Uri uri) throws JSONException {
-                String host = uri.getHost();
-                if (Setting.block.length() > 0) {
-                    for (int i = 0; i < Setting.block.length(); i++) {
-                        if (host.endsWith(Setting.block.getString(i))) {
-                            return true;
+            public WebResourceResponse shouldInterceptRequest(WebView view, final WebResourceRequest request) {
+                boolean permit = true;
+                if (request != null && request.getUrl() != null) {
+                    String scheme = request.getUrl().getScheme().trim();
+                    if (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) {
+                        String host = request.getUrl().getHost().toLowerCase(Locale.ROOT);
+                        if (Setting.block.length() > 0) {
+                            for (int i = 0; i < Setting.block.length(); i++) {
+                                try {
+                                    if (host.endsWith(Setting.block.getString(i))) {
+                                        permit = false;
+                                        break;
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        if (Setting.allow.length() > 0) {
+                            permit = false;
+                            for (int i = 0; i < Setting.allow.length(); i++) {
+                                try {
+                                    if (host.endsWith(Setting.allow.getString(i))) {
+                                        permit = true;
+                                        break;
+                                    }
+                                } catch (JSONException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     }
-                    return false;
                 }
-                if (Setting.allow.length() > 0) {
-                    for (int i = 0; i < Setting.allow.length(); i++) {
-                        if (host.endsWith(Setting.allow.getString(i))) {
-                            return false;
-                        }
-                    }
-                    return true;
+                if (permit) {
+                    return super.shouldInterceptRequest(view, request);
+                } else {
+                    return new WebResourceResponse("", "", null);
                 }
-                return false;
             }
         });
         swipe = (SwipeRefreshLayout) this.findViewById(R.id.swipeContainer);
@@ -246,7 +242,6 @@ public class MainActivity extends Activity {
     }
 
     private class ejaChromeClient extends WebChromeClient {
-
         private View mCustomView;
         private WebChromeClient.CustomViewCallback mCustomViewCallback;
         private int mOriginalOrientation;

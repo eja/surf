@@ -1,7 +1,9 @@
 package it.eja.surf;
 
 import android.webkit.JavascriptInterface;
+
 import org.json.JSONException;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -72,6 +74,15 @@ public class Javascript {
     public void fileWrite(String uuid, String fileName, String value) {
         if (uuid.equals(Setting.uuid)) {
             MainActivity.fileWrite(fileName, value);
+        }
+    }
+
+    @JavascriptInterface
+    public String settingGetAll(String uuid) throws JSONException {
+        if (uuid.equals(Setting.uuid)) {
+            return Setting.load();
+        } else {
+            return "";
         }
     }
 
