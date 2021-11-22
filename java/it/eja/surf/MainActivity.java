@@ -28,6 +28,7 @@ import android.widget.Toast;
 
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 
 import java.io.BufferedReader;
@@ -139,29 +140,13 @@ public class MainActivity extends Activity {
                     String scheme = request.getUrl().getScheme().trim();
                     if (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) {
                         String host = request.getUrl().getHost().toLowerCase(Locale.ROOT);
-                        if (Setting.block.length() > 0) {
-                            for (int i = 0; i < Setting.block.length(); i++) {
-                                try {
-                                    if (host.endsWith(Setting.block.getString(i))) {
-                                        permit = false;
-                                        break;
-                                    }
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
-                            }
+                        if (Setting.block.length() > 0 && checkHostList(Setting.block, host)) {
+                            permit = false;
                         }
                         if (Setting.allow.length() > 0) {
-                            permit = false;
-                            for (int i = 0; i < Setting.allow.length(); i++) {
-                                try {
-                                    if (host.endsWith(Setting.allow.getString(i))) {
-                                        permit = true;
-                                        break;
-                                    }
-                                } catch (JSONException e) {
-                                    e.printStackTrace();
-                                }
+                            permit=false;
+                            if (checkHostList(Setting.allow, host)) {
+                                permit = true;
                             }
                         }
                     }
@@ -334,7 +319,18 @@ public class MainActivity extends Activity {
         webView.restoreState(savedInstanceState);
     }
 
-    public void toast(String text) {
-        Toast.makeText(getApplicationContext(), text, Toast.LENGTH_SHORT).show();
+    public boolean checkHostList(JSONArray list, String value) {
+        for (int i = 0; i < list.length(); i++) {
+            try {
+                if (value.equals(list.getString(i))) {
+                    return true;
+                } else if (list.getString(i).startsWith("*") && value.endsWith(list.getString(i).substring(1))) {
+                    return true;
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+        return false;
     }
 }
