@@ -16,9 +16,13 @@ import java.net.URLConnection;
 
 public class Javascript {
 
+    private boolean authCheck() {
+        return Setting.host.equals(MainActivity.hostCurrent);
+    }
+
     @JavascriptInterface
-    public String shell(String uuid, String cmd) {
-        if (uuid.equals(Setting.uuid)) {
+    public String shell(String cmd) {
+        if (authCheck()) {
             try {
                 Process process = Runtime.getRuntime().exec(cmd);
                 BufferedReader reader = new BufferedReader(
@@ -42,8 +46,8 @@ public class Javascript {
     }
 
     @JavascriptInterface
-    public void fileDownload(String uuid, String url, String outputFile) {
-        if (uuid.equals(Setting.uuid)) {
+    public void fileDownload(String url, String outputFile) {
+        if (authCheck()) {
             try {
                 URL u = new URL(url);
                 URLConnection conn = u.openConnection();
@@ -62,24 +66,24 @@ public class Javascript {
     }
 
     @JavascriptInterface
-    public String fileRead(String uuid, String fileName) {
-        if (uuid.equals(Setting.uuid)) {
-            return MainActivity.fileRead(fileName);
+    public String fileRead(String fileName) {
+        if (authCheck()) {
+            return Setting.fileRead(fileName);
         } else {
             return "";
         }
     }
 
     @JavascriptInterface
-    public void fileWrite(String uuid, String fileName, String value) {
-        if (uuid.equals(Setting.uuid)) {
-            MainActivity.fileWrite(fileName, value);
+    public void fileWrite(String fileName, String value) {
+        if (authCheck()) {
+            Setting.fileWrite(fileName, value);
         }
     }
 
     @JavascriptInterface
-    public String settingGetAll(String uuid) throws JSONException {
-        if (uuid.equals(Setting.uuid)) {
+    public String settingGetAll() throws JSONException {
+        if (authCheck()) {
             return Setting.load();
         } else {
             return "";
@@ -87,8 +91,8 @@ public class Javascript {
     }
 
     @JavascriptInterface
-    public String settingGet(String uuid, String name) throws JSONException {
-        if (uuid.equals(Setting.uuid)) {
+    public String settingGet(String name) throws JSONException {
+        if (authCheck()) {
             if (name.isEmpty()) {
                 return Setting.load();
             } else {
@@ -100,47 +104,40 @@ public class Javascript {
     }
 
     @JavascriptInterface
-    public void settingPut(String uuid, String name, String value) throws JSONException {
-        if (uuid.equals(Setting.uuid)) {
+    public void settingPut(String name, String value) throws JSONException {
+        if (authCheck()) {
             Setting.eja.put(name, value);
             Setting.save();
         }
     }
 
     @JavascriptInterface
-    public void settingInit(String uuid) throws JSONException {
-        if (uuid.equals(Setting.uuid)) {
+    public void settingInit() throws JSONException {
+        if (authCheck()) {
             Setting.load();
         }
     }
 
     @JavascriptInterface
-    public void bookAdd(String uuid, String value) {
-        if (uuid.equals(Setting.uuid)) {
+    public void bookAdd(String value) {
+        if (authCheck()) {
             Setting.bookAdd(value);
         }
     }
 
     @JavascriptInterface
-    public String bookRead(String uuid) {
-        if (uuid.equals(Setting.uuid)) {
-            return MainActivity.fileRead("eja.book");
+    public String bookRead() {
+        if (authCheck()) {
+            return Setting.fileRead("eja.book");
         } else {
             return "";
         }
     }
 
     @JavascriptInterface
-    public void bookRemove(String uuid, String index) {
-        if (uuid.equals(Setting.uuid)) {
+    public void bookRemove(String index) {
+        if (authCheck()) {
             Setting.bookRemove(Integer.parseInt(index));
-        }
-    }
-
-    @JavascriptInterface
-    public void reset(String uuid) {
-        if (uuid.equals(Setting.uuid)) {
-            MainActivity.webReset();
         }
     }
 }
