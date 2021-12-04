@@ -24,7 +24,6 @@ import java.util.Locale;
 
 public class MainActivity extends Activity {
     public static String hostCurrent;
-    public static String filePath;
     SwipeRefreshLayout swipe;
     WebView webView;
 

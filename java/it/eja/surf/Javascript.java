@@ -56,7 +56,7 @@ public class Javascript {
                 byte[] buffer = new byte[contentLength];
                 stream.readFully(buffer);
                 stream.close();
-                DataOutputStream fos = new DataOutputStream(new FileOutputStream(MainActivity.filePath + File.separator + outputFile));
+                DataOutputStream fos = new DataOutputStream(new FileOutputStream(Setting.path + File.separator + outputFile));
                 fos.write(buffer);
                 fos.flush();
                 fos.close();
