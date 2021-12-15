@@ -20,9 +20,11 @@ import org.json.JSONException;
 
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Locale;
 
 public class MainActivity extends Activity {
+    HashMap<String, String> dnsCache = new HashMap<String, String>();
     public static String hostCurrent;
     SwipeRefreshLayout swipe;
     WebView webView;
@@ -67,7 +69,7 @@ public class MainActivity extends Activity {
             WebView.HitTestResult hitTestResult = webView.getHitTestResult();
             if (hitTestResult.getType() == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
                 String url = hitTestResult.getExtra();
-                webView.evaluateJavascript("(function() { return confirm(\"Bookmark?\"); })();", s -> {
+                webView.evaluateJavascript("(function() { return confirm(\"+ ?\"); })();", s -> {
                     if (s.equals("true")) {
                         Setting.bookAdd(url);
                     }
@@ -83,7 +85,7 @@ public class MainActivity extends Activity {
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.startsWith("intent://") || url.startsWith("tel:") || url.startsWith("sms:")) {
+                if (url.startsWith("tel:") || url.startsWith("sms:")) {
                     Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     startActivity(intent);
                     return true;
@@ -115,11 +117,19 @@ public class MainActivity extends Activity {
                     String scheme = request.getUrl().getScheme().trim();
                     if (scheme.equalsIgnoreCase("http") || scheme.equalsIgnoreCase("https")) {
                         String host = request.getUrl().getHost().toLowerCase(Locale.ROOT);
+                        if (Setting.allow.length() > 0) {
+                            permit = Setting.checkList(Setting.allow, host);
+                        }
                         if (Setting.block.length() > 0 && Setting.checkList(Setting.block, host)) {
                             permit = false;
                         }
-                        if (Setting.allow.length() > 0) {
-                            permit = Setting.checkList(Setting.allow, host);
+                        if (permit && !Setting.doh.isEmpty()) {
+                            if (!dnsCache.containsKey(host)) {
+                                dnsCache.put(host, Setting.dohToIp(host));
+                            }
+                            if (dnsCache.get(host).equals("0.0.0.0")) {
+                                permit = false;
+                            }
                         }
                     }
                 }

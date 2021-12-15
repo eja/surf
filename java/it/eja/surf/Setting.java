@@ -1,24 +1,32 @@
 package it.eja.surf;
 
+import android.util.Base64;
+
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONException;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Writer;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 
 public class Setting {
-    public static boolean reset = true;
     public static String host = "eja.surf";
     public static String home = "";
     public static String path = "";
+    public static String doh = "";
     public static int version = 0;
+    public static boolean reset = false;
     public static JSONObject eja = new JSONObject();
     public static JSONArray book = new JSONArray();
     public static JSONArray allow = new JSONArray();
@@ -28,18 +36,19 @@ public class Setting {
         String data = fileRead("eja.json");
         if (data.length() > 0) {
             eja = new JSONObject(data);
-            if (!eja.getString("host").isEmpty()) {
-                host = eja.getString("host");
-            }
         } else {
             eja.put("host", host);
-            eja.put("reset", reset);
             Setting.save();
         }
         eja.put("version", version);
-        home = String.format("https://%s/", host);
+        if (eja.has("host")) {
+            host = eja.getString("host");
+        }
         if (eja.has("reset")) {
             reset = eja.getBoolean("reset");
+        }
+        if (eja.has("doh")) {
+            doh = eja.getString("doh");
         }
         if (Setting.eja.has("proxy") && Setting.eja.getBoolean("proxy")) {
             if (Setting.eja.has("socksHost") && Setting.eja.has("socksPort")) {
@@ -63,6 +72,7 @@ public class Setting {
                 block = new JSONArray(data);
             }
         }
+        home = String.format("https://%s/", host);
         return eja.toString();
     }
 
@@ -125,5 +135,47 @@ public class Setting {
             }
         }
         return false;
+    }
+
+    public static String dohToIp(String domain) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        DataOutputStream query = new DataOutputStream(baos);
+        String ip = "0.0.0.0";
+        try {
+            int id = (int) (Math.random() * 0xffff);
+            query.writeShort(id);
+            query.writeShort(0x0100);
+            query.writeShort(0x0001);
+            query.writeShort(0x0000);
+            query.writeShort(0x0000);
+            query.writeShort(0x0000);
+            String[] levels = domain.split("\\.");
+            for (String level : levels) {
+                byte[] bytes = level.getBytes(StandardCharsets.UTF_8);
+                query.writeByte(bytes.length);
+                query.write(bytes);
+            }
+            query.writeByte(0x00);
+            query.writeShort(0x0001);
+            query.writeShort(0x0001);
+            byte[] br = new byte[1024];
+            byte[] bw = baos.toByteArray();
+            InputStream in = new URL(String.format("%s?dns=%s", Setting.doh, Base64.encodeToString(bw, Base64.URL_SAFE | Base64.NO_PADDING | Base64.NO_WRAP))).openStream();
+            int l = in.read(br);
+            int x = bw.length;
+            if (br[0] == bw[0] && br[1] == bw[1]) {
+                while (x < l && br[x] == (byte) 0xc0) {
+                    if (br[x + 3] == 0x01 && br[x + 11] == 4) {
+                        ip = String.format("%d.%d.%d.%d", br[x + 12] & 0xff, br[x + 13] & 0xff, br[x + 14] & 0xff, br[x + 15] & 0xff);
+                        break;
+                    } else {
+                        x = x + 11 + 1 + br[x + 11];
+                    }
+                }
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return ip;
     }
 }
