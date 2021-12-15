@@ -21,19 +21,21 @@ At the right side of the search bar there are 2 buttons, the first from the left
 You can host the whole browser logic on your own server by simply copying and adapting eja.surf html/css/js, thus allowing you a deeper control of the browser UI. By changing this field you must be sure that your url is compatible with the browser javascript interface otherwise you will be stuck on that page until you reinstall the browser.
 
 ### Delete everything on Exit
-Set by default, it will delete any cookie/history/cache/etc. on closing the app
+Delete any cookie/history/cache/etc. on start
 
-### Delete everything on Refresh
-Same as above but deleting everything when pulling down the page, i.e. returning to the home page.
+### DNS over HTTPS
+Use any DoH provider to reject ads, malware, etc...
 
 ### IP block list
-Here you can choose what kind of content you would like to block, the lists are populated from well known adblocking projects. You will need to restart the app (close and open again).
+You can choose what kind of content you would like to block, the lists are populated from well known adblocking projects
 
 ### Proxy
-Choose whether to use a socks4/5 proxy or not, you will need to restart the app.
+Choose whether to use a socks4/5 proxy or not
 
 ### SOCKS Host
 The proxy socks hostname/ip
 
 ### SOCKS Port 
 The proxy socks port
+
+Restart the app for any change to take effect.
