@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
 import android.webkit.WebResourceRequest;
@@ -69,9 +70,9 @@ public class MainActivity extends Activity {
             WebView.HitTestResult hitTestResult = webView.getHitTestResult();
             if (hitTestResult.getType() == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
                 String url = hitTestResult.getExtra();
-                webView.evaluateJavascript("(function() { return confirm(\"+ ?\"); })();", s -> {
-                    if (s.equals("true")) {
-                        Setting.bookAdd(url);
+                webView.evaluateJavascript("(function() { return prompt(\"Bookmark?\",\""+url+"\"); })();", s -> {
+                    if (s != null) {
+                        Setting.bookAdd(s.substring(1,s.length()-1));
                     }
                 });
             }

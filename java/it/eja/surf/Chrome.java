@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.text.InputType;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
 import android.webkit.WebChromeClient;
@@ -55,10 +56,16 @@ public class Chrome extends WebChromeClient {
         final EditText input = new EditText(view.getContext());
         input.setInputType(InputType.TYPE_CLASS_TEXT);
         input.setText(defaultValue);
+        FrameLayout container = new FrameLayout(this.activity);
+        FrameLayout.LayoutParams params = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        params.leftMargin = 50;
+        params.rightMargin = 50;
+        input.setLayoutParams(params);
+        container.addView(input);
         new AlertDialog.Builder(view.getContext())
                 .setTitle("")
                 .setMessage(message)
-                .setView(input)
+                .setView(container)
                 .setPositiveButton("OK", (DialogInterface dialog, int which) -> result.confirm(input.getText().toString()))
                 .setNegativeButton("Cancel", (DialogInterface dialog, int which) -> result.cancel())
                 .setOnDismissListener((DialogInterface dialog) -> result.cancel())
