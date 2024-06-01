@@ -11,8 +11,8 @@ android {
         applicationId = "it.eja.surf"
         minSdk = 24
         targetSdk = 34
-        versionCode = 15
-        versionName = "3.5.29"
+        versionCode = 16
+        versionName = "3.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
