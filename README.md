@@ -1,45 +1,55 @@
-# eja.surf
+# Surf
 
 The idea behind this browser is to implement all known privacy features allowed by Android while keeping the code as simple as possible to read and understand.
 
-A group of JavaScript callback functions is also in place to allow anyone to design a new landing page and funnel all URL and search operations through their own server, thus maintaining as much control as possible.
+## User Interface and Navigation
 
-## UX
+The browser interface is designed to be minimalistic. The navigation toolbar automatically hides during browsing to provide an immersive full-screen experience.
 
-The browser interface is intentionally simple and clean. Write something in the search box and click the search button on the keyboard. If the search term is a valid URL, you will be redirected; otherwise, the search will be conducted via a custom Google search engine.
+To reveal the toolbar and navigation controls, you may perform one of the following actions:
+*   Scroll the page upward.
+*   Perform a "swipe to refresh" gesture (pulling down from the top).
+*   Press the device's Menu or Search key.
 
-The custom search engine will also group the results by official international encyclopedias and news agencies.
+The search bar functions as a dual-purpose input field. If a valid URL is entered, the browser navigates directly to the address. If a search term is entered, it is processed via the configured Home Page URL.
 
-Pulling down the page from the top border (refreshing) will bring you to the home page.
+## Menu and Features
 
-A long click on any link will allow you to add that link to the bookmark list, replacing the usual and confusing multi-million background open windows.
+Access to browser functions is provided via the menu button (vertical ellipsis) located on the right side of the navigation bar. The menu provides the following options:
 
-On the right side of the search bar, there are two buttons. The first, from the left, is to manage the bookmarks, and the second is to manage the settings of the browser.
+### Home
+Navigates the browser immediately to the defined Home Page.
 
-## Setup Page
+### Bookmarks
+The bookmark system has been updated to allow for list-based management.
+*   **Add Bookmark:** Select "Add Page" within the Bookmarks menu to save the current URL.
+*   **Manage Bookmarks:** A long-press on any existing bookmark reveals options to **Edit** the URL, **Delete** the entry, or reorder the list by moving items **Up** or **Down**.
 
-You can host the whole browser logic on your own server by simply copying and adapting the eja.surf HTML/CSS/JS, thus allowing you deeper control of the browser UI. By changing this field, you must ensure that your URL is compatible with the browser JavaScript interface; otherwise, you will be stuck on that page until you reinstall the browser.
+### Settings
+Configures the core behavior and network settings of the application.
 
-## Settings
+### Find in Page
+Activates a dedicated search interface at the top of the screen. This allows you to search for specific text within the currently loaded webpage. The interface includes controls to navigate to the previous or next occurrence and a button to close the search mode.
 
-### Delete Everything on Exit
+### Reload Page
+Refreshes the current webpage.
 
-Delete any cookies, history, cache, etc., on start.
+## Configuration
 
-### DNS over HTTPS
+The Settings menu allows for detailed customization of the browser's network and privacy behavior. Changes require an application restart to take effect.
 
-Use any DoH provider to reject ads, malware, etc.
+### Home Page
+You may define a custom URL to serve as the landing page. This URL also handles search queries generated from the main input bar. By hosting the browser logic on a private server, you can adapt the HTML, CSS, and JavaScript of the landing page to control the browser's UI and search funnel.
 
-### Proxy
+### DNS over HTTPS (DoH)
+The browser supports DNS over HTTPS. This feature encrypts DNS queries, preventing third parties from intercepting or manipulating domain resolution requests. Additionally, this mechanism facilitates content filtering; by utilizing a DoH provider that resolves specific domains to a null address—such as the default provider—the browser effectively blocks advertisements and unwanted trackers.
 
-Choose whether to use a SOCKS4/5 proxy or not.
+### Clear Data on Exit
+When enabled, the application will automatically purge all session data upon termination. This includes cookies, browsing history, cache, form data, and local storage.
 
-### SOCKS Host
+### Proxy Configuration
+The browser supports traffic tunneling via SOCKS4 or SOCKS5 proxies.
+*   **SOCKS Host:** The IP address or hostname of the proxy server.
+*   **SOCKS Port:** The port number of the proxy server.
 
-The proxy SOCKS hostname/IP.
-
-### SOCKS Port
-
-The proxy SOCKS port.
-
-Restart the app for any changes to take effect.
+If these fields are left empty, the proxy connection is disabled.
