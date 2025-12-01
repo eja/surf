@@ -5,12 +5,12 @@ plugins {
 
 android {
     namespace = "it.eja.surf"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "it.eja.surf"
         minSdk = 24
-        targetSdk = 34
+        targetSdk = 35
         versionCode = 19
         versionName = "4.12.1"
 
