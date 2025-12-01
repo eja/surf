@@ -1,93 +1,101 @@
-// Copyright (C) 2021-2024 by Ubaldo Porcheddu <ubaldo@eja.it>
+// Copyright (C) by Ubaldo Porcheddu <ubaldo@eja.it>
 
 package it.eja.surf
 
 import android.util.Base64
 import org.json.JSONArray
-import org.json.JSONException
 import org.json.JSONObject
-import java.io.*
+import java.io.ByteArrayOutputStream
+import java.io.DataOutputStream
+import java.io.File
+import java.io.IOException
 import java.net.URL
 import java.nio.charset.StandardCharsets
-import java.util.*
 
 object Setting {
-    var host = "eja.surf"
-    var home = ""
+    var home = "http://surf.eja.it"
+    var doh = "http://surf.eja.it"
     var path = ""
-    var doh = ""
     var version = 0
     var reset = false
     var eja = JSONObject()
     var book = JSONArray()
 
-    @Throws(JSONException::class)
-    fun load(): String {
-        val data = fileRead("eja.json")
+    fun load() {
+        val data = readInternal("eja.json")
         if (data.isNotEmpty()) {
             eja = JSONObject(data)
         } else {
-            eja.put("host", host)
+            eja.put("home", home)
             save()
         }
-        eja.put("version", version)
-        host = eja.optString("host", host)
+
+        home = if (home.startsWith("http")) home else "http://$home"
+
         reset = eja.optBoolean("reset", reset)
         doh = eja.optString("doh", doh)
 
         if (eja.optBoolean("proxy", false)) {
-            eja.optString("socksHost")?.let { System.setProperty("socksProxyHost", it) }
-            eja.optString("socksPort")?.let { System.setProperty("socksProxyPort", it) }
+            val sHost = eja.optString("socksHost")
+            val sPort = eja.optString("socksPort")
+            if (sHost.isNotEmpty()) System.setProperty("socksProxyHost", sHost)
+            if (sPort.isNotEmpty()) System.setProperty("socksProxyPort", sPort)
         }
 
-        fileRead("eja.book").takeIf { it.isNotEmpty() }?.let { book = JSONArray(it) }
-
-        home = "https://$host/"
-        return eja.toString()
+        book = eja.optJSONArray("bookmarks") ?: JSONArray()
     }
 
     fun save() {
-        fileWrite("eja.json", eja.toString())
+        eja.put("bookmarks", book)
+        writeInternal("eja.json", eja.toString())
     }
 
     fun bookAdd(value: String) {
-        if (value.lowercase(Locale.getDefault()).startsWith("http")) {
-            book.put(value)
-            fileWrite("eja.book", book.toString())
+        for (i in 0 until book.length()) {
+            if (book.getString(i) == value) return
+        }
+        book.put(value)
+        save()
+    }
+
+    fun bookEdit(index: Int, newValue: String) {
+        if (index >= 0 && index < book.length()) {
+            book.put(index, newValue)
+            save()
         }
     }
 
-    fun bookRemove(index: Int?) {
-        index?.let {
-            book.remove(it)
-            fileWrite("eja.book", book.toString())
+    fun bookRemove(index: Int) {
+        if (index >= 0 && index < book.length()) {
+            book.remove(index)
+            save()
         }
     }
 
-    fun fileRead(fileName: String?): String {
-        val contentBuilder = StringBuilder()
+    fun bookSwap(i: Int, j: Int) {
+        if (i in 0 until book.length() && j in 0 until book.length()) {
+            val temp = book.getString(i)
+            book.put(i, book.getString(j))
+            book.put(j, temp)
+            save()
+        }
+    }
+
+    private fun readInternal(fileName: String): String {
         val filePath = "$path${File.separator}$fileName"
         val file = File(filePath)
-        if (file.exists()) {
-            try {
-                BufferedReader(FileReader(filePath)).use { br ->
-                    br.forEachLine { line ->
-                        contentBuilder.append(line).append("\n")
-                    }
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            }
+        if (!file.exists()) return ""
+        return try {
+            file.readText()
+        } catch (e: IOException) {
+            ""
         }
-        return contentBuilder.toString()
     }
 
-    fun fileWrite(fileName: String?, value: String?) {
+    private fun writeInternal(fileName: String, value: String) {
         val filePath = "$path${File.separator}$fileName"
         try {
-            BufferedWriter(OutputStreamWriter(FileOutputStream(filePath))).use { writer ->
-                writer.write(value)
-            }
+            File(filePath).writeText(value)
         } catch (e: IOException) {
             e.printStackTrace()
         }
@@ -118,10 +126,10 @@ object Setting {
             val encodedQuery = Base64.encodeToString(baos.toByteArray(), Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
             val url = URL("$doh?dns=$encodedQuery")
 
-            url.openStream().use { `in` ->
+            url.openStream().use { input ->
                 val br = ByteArray(1024)
                 val bw = baos.toByteArray()
-                val bytesRead = `in`.read(br)
+                val bytesRead = input.read(br)
 
                 var x = bw.size
                 if (br[0] == bw[0] && br[1] == bw[1]) {

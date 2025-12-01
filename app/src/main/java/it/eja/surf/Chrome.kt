@@ -1,4 +1,4 @@
-// Copyright (C) 2021-2024 by Ubaldo Porcheddu <ubaldo@eja.it>
+// Copyright (C) by Ubaldo Porcheddu <ubaldo@eja.it>
 
 package it.eja.surf
 
