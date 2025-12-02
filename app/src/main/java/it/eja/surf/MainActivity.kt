@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
@@ -33,11 +32,7 @@ class MainActivity : Activity() {
     internal lateinit var webView: WebView
 
     private lateinit var toolbarContainer: FrameLayout
-    private lateinit var searchLayout: FrameLayout
     private lateinit var findLayout: LinearLayout
-
-    private lateinit var searchInput: EditText
-    private lateinit var menuIcon: TextView
 
     private lateinit var findInput: EditText
 
@@ -78,41 +73,8 @@ class MainActivity : Activity() {
             setBackgroundColor(Color.parseColor("#F0F0F0"))
             setPadding(10, 10, 10, 10)
             elevation = 10f
+            visibility = View.GONE
         }
-
-        searchLayout = FrameLayout(this).apply {
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        }
-
-        searchInput = EditText(this).apply {
-            hint = "Search or enter address"
-            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
-            imeOptions = EditorInfo.IME_ACTION_GO
-            setSingleLine()
-            background = null
-            setPadding(20, 20, 100, 20)
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            setOnEditorActionListener { v, actionId, _ ->
-                if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
-                    processSearch(v.text.toString())
-                    true
-                } else false
-            }
-        }
-
-        menuIcon = TextView(this).apply {
-            text = "⋮"
-            textSize = 24f
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(30, 10, 30, 10)
-            layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
-                gravity = Gravity.END or Gravity.CENTER_VERTICAL
-            }
-            setOnClickListener { Menu(this@MainActivity).show() }
-        }
-
-        searchLayout.addView(searchInput)
-        searchLayout.addView(menuIcon)
 
         findLayout = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -166,7 +128,6 @@ class MainActivity : Activity() {
         findLayout.addView(btnNext)
         findLayout.addView(btnClose)
 
-        toolbarContainer.addView(searchLayout)
         toolbarContainer.addView(findLayout)
 
         root.addView(swipe)
@@ -180,43 +141,36 @@ class MainActivity : Activity() {
         setupWebView()
 
         swipe.setOnRefreshListener {
-            showHomeMode()
             swipe.isRefreshing = false
+            Menu(this).show()
         }
 
         if (savedInstanceState == null) {
             webView.loadUrl(Setting.home)
             showBrowserMode()
-        } else {
-            showHomeMode()
         }
     }
 
-    override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
-        if (keyCode == KeyEvent.KEYCODE_MENU || keyCode == KeyEvent.KEYCODE_SEARCH) {
-            if (toolbarContainer.visibility == View.GONE) showHomeMode() else showBrowserMode()
-            return true
-        }
-        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && toolbarContainer.visibility == View.GONE) {
-            if (webView.scrollY == 0) {
-                showHomeMode()
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action == KeyEvent.ACTION_DOWN) {
+            if (event.keyCode == KeyEvent.KEYCODE_MENU || event.keyCode == KeyEvent.KEYCODE_SEARCH) {
+                Menu(this).show()
                 return true
             }
+            if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (webView.scrollY == 0) {
+                    Menu(this).show()
+                    return true
+                }
+            }
         }
-        return super.onKeyDown(keyCode, event)
-    }
-
-    private fun showHomeMode() {
-        toolbarContainer.visibility = View.VISIBLE
-        searchLayout.visibility = View.VISIBLE
-        findLayout.visibility = View.GONE
-        window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
+        return super.dispatchKeyEvent(event)
     }
 
     private fun showBrowserMode() {
-        toolbarContainer.visibility = View.GONE
-        closeFindMode()
-        imm.hideSoftInputFromWindow(searchInput.windowToken, 0)
+        if (findLayout.visibility != View.VISIBLE) {
+            toolbarContainer.visibility = View.GONE
+        }
         window.decorView.systemUiVisibility = (View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
@@ -227,7 +181,6 @@ class MainActivity : Activity() {
 
     internal fun showFindMode() {
         toolbarContainer.visibility = View.VISIBLE
-        searchLayout.visibility = View.GONE
         findLayout.visibility = View.VISIBLE
         findInput.requestFocus()
         imm.showSoftInput(findInput, InputMethodManager.SHOW_IMPLICIT)
@@ -236,9 +189,9 @@ class MainActivity : Activity() {
     private fun closeFindMode() {
         webView.clearMatches()
         findInput.setText("")
-        searchLayout.visibility = View.VISIBLE
         findLayout.visibility = View.GONE
         imm.hideSoftInputFromWindow(findInput.windowToken, 0)
+        toolbarContainer.visibility = View.GONE
     }
 
     internal fun processSearch(query: String) {
@@ -265,12 +218,7 @@ class MainActivity : Activity() {
         if (webView.canGoBack()) {
             webView.goBack()
         } else {
-            if (toolbarContainer.visibility == View.GONE) {
-                showHomeMode()
-                webView.stopLoading()
-            } else {
-                super.onBackPressed()
-            }
+            super.onBackPressed()
         }
     }
 
@@ -316,11 +264,16 @@ class MainActivity : Activity() {
 
                 override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
+                    swipe.isRefreshing = true
                     try {
                         hostCurrent = URL(url).host
-                        searchInput.setText(url)
                     } catch (e: MalformedURLException) { }
                     showBrowserMode()
+                }
+
+                override fun onPageFinished(view: WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    swipe.isRefreshing = false
                 }
 
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {

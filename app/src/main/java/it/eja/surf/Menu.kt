@@ -4,7 +4,9 @@ package it.eja.surf
 
 import android.app.AlertDialog
 import android.text.InputType
+import android.view.Gravity
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
@@ -16,18 +18,75 @@ import android.widget.Toast
 class Menu(private val main: MainActivity) {
 
     fun show() {
-        val options = arrayOf("Home","Bookmarks", "Settings", "Find in Page", "Reload Page")
-        AlertDialog.Builder(main)
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> main.webView.loadUrl(Setting.home)
-                    1 -> showBookmarks()
-                    2 -> showSettings()
-                    3 -> main.showFindMode()
-                    4 -> main.webView.reload()
+        val container = LinearLayout(main).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        val options = arrayOf("Settings", "Bookmarks", "Find in Page")
+
+        val listView = ListView(main).apply {
+            adapter = ArrayAdapter(main, android.R.layout.simple_list_item_1, options)
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        val inputContainer = LinearLayout(main).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(20, 0, 20, 20)
+            gravity = Gravity.CENTER_VERTICAL
+            val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            params.setMargins(0, 0, 0, 0)
+            layoutParams = params
+        }
+
+        val urlInput = EditText(main).apply {
+            hint = "Search or enter address"
+            setText(main.webView.url)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_URI
+            imeOptions = EditorInfo.IME_ACTION_GO
+            setSingleLine()
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        inputContainer.addView(urlInput)
+        container.addView(listView)
+        container.addView(inputContainer)
+
+        val dialog = AlertDialog.Builder(main)
+            .setView(container)
+            .setPositiveButton("Go") { _, _ ->
+                main.processSearch(urlInput.text.toString())
+            }
+            .setNeutralButton("Home") { _, _ ->
+                main.webView.loadUrl(Setting.home)
+            }
+            .setNegativeButton("Add") { _, _ ->
+                val url = urlInput.text.toString()
+                if (url.isNotEmpty()) {
+                    Setting.bookAdd(url)
+                    Toast.makeText(main, "Saved", Toast.LENGTH_SHORT).show()
                 }
             }
-            .show()
+            .create()
+
+        listView.setOnItemClickListener { _, _, position, _ ->
+            when (position) {
+                0 -> showSettings()
+                1 -> showBookmarks()
+                2 -> main.showFindMode()
+            }
+            dialog.dismiss()
+        }
+
+        urlInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
+                main.processSearch(urlInput.text.toString())
+                dialog.dismiss()
+                true
+            } else false
+        }
+
+        dialog.show()
     }
 
     private fun showBookmarks() {
@@ -49,7 +108,7 @@ class Menu(private val main: MainActivity) {
                     Toast.makeText(main, "Saved", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Close", null)
+            .setNegativeButton("Back") { _, _ -> show() }
             .create()
 
         listView.setOnItemClickListener { _, _, position, _ ->
@@ -110,9 +169,9 @@ class Menu(private val main: MainActivity) {
         layout.addView(TextView(main).apply { text = "Settings"; textSize = 20f })
         layout.addView(inputHost)
         layout.addView(inputDoh)
-        layout.addView(checkReset)
         layout.addView(inputSocksHost)
         layout.addView(inputSocksPort)
+        layout.addView(checkReset)
 
         AlertDialog.Builder(main)
             .setView(layout)
