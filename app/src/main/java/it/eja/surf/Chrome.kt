@@ -14,6 +14,8 @@ import android.webkit.WebChromeClient
 import android.webkit.WebView
 import android.widget.EditText
 import android.widget.FrameLayout
+import android.net.Uri
+import android.webkit.ValueCallback
 
 class Chrome(private val mainActivity: MainActivity) : WebChromeClient() {
     private var mCustomView: View? = null
@@ -72,6 +74,28 @@ class Chrome(private val mainActivity: MainActivity) : WebChromeClient() {
             setNegativeButton("Cancel") { _, _ -> result.cancel() }
             setOnDismissListener { result.cancel() }
         }.create().show()
+        return true
+    }
+
+    override fun onShowFileChooser(
+        webView: WebView?,
+        filePathCallback: ValueCallback<Array<Uri>>?,
+        fileChooserParams: FileChooserParams?
+    ): Boolean {
+        if (mainActivity.fileUploadCallback != null) {
+            mainActivity.fileUploadCallback?.onReceiveValue(null)
+            mainActivity.fileUploadCallback = null
+        }
+
+        mainActivity.fileUploadCallback = filePathCallback
+
+        try {
+            val intent = fileChooserParams?.createIntent()
+            mainActivity.startActivityForResult(intent, 100)
+        } catch (e: Exception) {
+            mainActivity.fileUploadCallback = null
+            return false
+        }
         return true
     }
 

@@ -25,6 +25,10 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
+import android.app.DownloadManager
+import android.os.Environment
+import android.webkit.URLUtil
+import android.webkit.ValueCallback
 
 class MainActivity : Activity() {
     private val dnsCache = HashMap<String, String>()
@@ -37,6 +41,8 @@ class MainActivity : Activity() {
     private lateinit var findInput: EditText
 
     private lateinit var imm: InputMethodManager
+
+    var fileUploadCallback: ValueCallback<Array<Uri>>? = null
 
     override fun onDestroy() {
         super.onDestroy()
@@ -251,8 +257,22 @@ class MainActivity : Activity() {
             }
             webChromeClient = Chrome(this@MainActivity)
 
-            setDownloadListener { url, _, _, _, _ ->
-                try { startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch(e:Exception){}
+            setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
+                val request = DownloadManager.Request(Uri.parse(url))
+                request.setMimeType(mimetype)
+                val cookies = CookieManager.getInstance().getCookie(url)
+                request.addRequestHeader("cookie", cookies)
+                request.addRequestHeader("User-Agent", userAgent)
+                request.setDescription("Downloading file...")
+                request.setTitle(URLUtil.guessFileName(url, contentDisposition, mimetype))
+                request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                request.setDestinationInExternalPublicDir(
+                    Environment.DIRECTORY_DOWNLOADS,
+                    URLUtil.guessFileName(url, contentDisposition, mimetype)
+                )
+                val dm = getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
+                dm.enqueue(request)
+                Toast.makeText(applicationContext, "Downloading...", Toast.LENGTH_SHORT).show()
             }
 
             webViewClient = object : WebViewClient() {
@@ -301,5 +321,17 @@ class MainActivity : Activity() {
 
     companion object {
         var hostCurrent: String? = null
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == 100) {
+            if (resultCode == Activity.RESULT_OK) {
+                fileUploadCallback?.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data))
+            } else {
+                fileUploadCallback?.onReceiveValue(null)
+            }
+            fileUploadCallback = null
+        }
     }
 }

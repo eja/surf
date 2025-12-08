@@ -17,7 +17,7 @@ object Setting {
     var doh = "http://surf.eja.it"
     var path = ""
     var version = 0
-    var reset = false
+    var reset = true
     var eja = JSONObject()
     var book = JSONArray()
 
