@@ -18,6 +18,7 @@ object Setting {
     var path = ""
     var version = 0
     var reset = true
+    var twoFingerSwipe = false
     var eja = JSONObject()
     var book = JSONArray()
 
@@ -34,6 +35,7 @@ object Setting {
 
         reset = eja.optBoolean("reset", reset)
         doh = eja.optString("doh", doh)
+        twoFingerSwipe = eja.optBoolean("twoFingerSwipe", false)
 
         if (eja.optBoolean("proxy", false)) {
             val sHost = eja.optString("socksHost")

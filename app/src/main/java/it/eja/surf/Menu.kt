@@ -163,6 +163,7 @@ class Menu(private val main: MainActivity) {
         val inputHost = EditText(main).apply { hint = "Home Page"; setText(Setting.home) }
         val inputDoh = EditText(main).apply { hint = "DNS over HTTPS"; setText(Setting.doh) }
         val checkReset = CheckBox(main).apply { text = "Clear Data on Exit"; isChecked = Setting.reset }
+        val checkTwoFinger = CheckBox(main).apply { text = "2 Finger Swipe Down"; isChecked = Setting.twoFingerSwipe }
         val inputSocksHost = EditText(main).apply { hint = "SOCKS Host"; setText(System.getProperty("socksProxyHost") ?: "") }
         val inputSocksPort = EditText(main).apply { hint = "SOCKS Port"; inputType = InputType.TYPE_CLASS_NUMBER; setText(System.getProperty("socksProxyPort") ?: "") }
 
@@ -172,6 +173,7 @@ class Menu(private val main: MainActivity) {
         layout.addView(inputSocksHost)
         layout.addView(inputSocksPort)
         layout.addView(checkReset)
+        layout.addView(checkTwoFinger)
 
         AlertDialog.Builder(main)
             .setView(layout)
@@ -179,12 +181,14 @@ class Menu(private val main: MainActivity) {
                 Setting.home = inputHost.text.toString()
                 Setting.doh = inputDoh.text.toString()
                 Setting.reset = checkReset.isChecked
+                Setting.twoFingerSwipe = checkTwoFinger.isChecked
 
                 Setting.home = if (Setting.home.startsWith("http")) Setting.home else "http://${Setting.home}"
 
                 Setting.eja.put("home", Setting.home)
                 Setting.eja.put("doh", Setting.doh)
                 Setting.eja.put("reset", Setting.reset)
+                Setting.eja.put("twoFingerSwipe", Setting.twoFingerSwipe)
 
                 val sHost = inputSocksHost.text.toString()
                 val sPort = inputSocksPort.text.toString()

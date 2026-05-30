@@ -21,7 +21,6 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.widget.*
-import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import java.net.MalformedURLException
 import java.net.URL
 import java.util.*
@@ -29,10 +28,10 @@ import android.app.DownloadManager
 import android.os.Environment
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
+import android.view.MotionEvent
 
 class MainActivity : Activity() {
     private val dnsCache = HashMap<String, String>()
-    private lateinit var swipe: SwipeRefreshLayout
     internal lateinit var webView: WebView
 
     private lateinit var toolbarContainer: FrameLayout
@@ -43,6 +42,10 @@ class MainActivity : Activity() {
     private lateinit var imm: InputMethodManager
 
     var fileUploadCallback: ValueCallback<Array<Uri>>? = null
+
+    private var startY1 = 0f
+    private var startY2 = 0f
+    private var isSwiping = false
 
     override fun onDestroy() {
         super.onDestroy()
@@ -66,11 +69,8 @@ class MainActivity : Activity() {
         val root = FrameLayout(this)
         root.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
-        swipe = SwipeRefreshLayout(this)
-        swipe.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         webView = WebView(this)
         webView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        swipe.addView(webView)
 
         toolbarContainer = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -136,7 +136,7 @@ class MainActivity : Activity() {
 
         toolbarContainer.addView(findLayout)
 
-        root.addView(swipe)
+        root.addView(webView)
         root.addView(toolbarContainer)
         setContentView(root)
 
@@ -145,11 +145,6 @@ class MainActivity : Activity() {
         }
 
         setupWebView()
-
-        swipe.setOnRefreshListener {
-            swipe.isRefreshing = false
-            Menu(this).show()
-        }
 
         if (savedInstanceState == null) {
             webView.loadUrl(Setting.home)
@@ -257,6 +252,47 @@ class MainActivity : Activity() {
             }
             webChromeClient = Chrome(this@MainActivity)
 
+            setOnTouchListener { _, event ->
+                val targetPointers = if (Setting.twoFingerSwipe) 2 else 1
+                if (targetPointers == 1 && webView.scrollY > 0) return@setOnTouchListener false
+
+                when (event.actionMasked) {
+                    MotionEvent.ACTION_DOWN -> {
+                        if (targetPointers == 1) {
+                            startY1 = event.y
+                            isSwiping = true
+                        }
+                    }
+                    MotionEvent.ACTION_POINTER_DOWN -> {
+                        if (targetPointers == 2 && event.pointerCount == 2) {
+                            startY1 = event.getY(0)
+                            startY2 = event.getY(1)
+                            isSwiping = true
+                        }
+                    }
+                    MotionEvent.ACTION_MOVE -> {
+                        if (isSwiping && event.pointerCount == targetPointers) {
+                            val dy1 = event.getY(0) - startY1
+                            val threshold = 180f
+                            if (targetPointers == 2) {
+                                val dy2 = event.getY(1) - startY2
+                                if (dy1 > threshold && dy2 > threshold) {
+                                    isSwiping = false
+                                    Menu(this@MainActivity).show()
+                                }
+                            } else if (dy1 > threshold) {
+                                isSwiping = false
+                                Menu(this@MainActivity).show()
+                            }
+                        }
+                    }
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
+                        isSwiping = false
+                    }
+                }
+                false
+            }
+
             setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
                 val request = DownloadManager.Request(Uri.parse(url))
                 request.setMimeType(mimetype)
@@ -284,7 +320,6 @@ class MainActivity : Activity() {
 
                 override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-                    swipe.isRefreshing = true
                     try {
                         hostCurrent = URL(url).host
                     } catch (e: MalformedURLException) { }
@@ -293,7 +328,6 @@ class MainActivity : Activity() {
 
                 override fun onPageFinished(view: WebView, url: String) {
                     super.onPageFinished(view, url)
-                    swipe.isRefreshing = false
                 }
 
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
