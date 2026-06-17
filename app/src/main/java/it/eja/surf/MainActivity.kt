@@ -28,7 +28,6 @@ import android.app.DownloadManager
 import android.os.Environment
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
-import android.view.MotionEvent
 
 class MainActivity : Activity() {
     private val dnsCache = HashMap<String, String>()
@@ -42,10 +41,6 @@ class MainActivity : Activity() {
     private lateinit var imm: InputMethodManager
 
     var fileUploadCallback: ValueCallback<Array<Uri>>? = null
-
-    private var startY1 = 0f
-    private var startY2 = 0f
-    private var isSwiping = false
 
     override fun onDestroy() {
         super.onDestroy()
@@ -152,8 +147,20 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun handleBackBehavior() {
+        if (findLayout.visibility == View.VISIBLE) {
+            closeFindMode()
+        } else {
+            Menu(this).show()
+        }
+    }
+
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
+            if (event.keyCode == KeyEvent.KEYCODE_BACK) {
+                handleBackBehavior()
+                return true
+            }
             if (event.keyCode == KeyEvent.KEYCODE_MENU || event.keyCode == KeyEvent.KEYCODE_SEARCH) {
                 Menu(this).show()
                 return true
@@ -195,32 +202,8 @@ class MainActivity : Activity() {
         toolbarContainer.visibility = View.GONE
     }
 
-    internal fun processSearch(query: String) {
-        if (query.isBlank()) return
-        var url = query.trim()
-        val isUrl = Patterns.WEB_URL.matcher(url).matches() || url.contains("://") || url.startsWith("www.")
-
-        if (!isUrl && !url.contains(".")) {
-            val host = if (Setting.home.endsWith("/")) Setting.home else "${Setting.home}/"
-            url = "${host}?q=$url"
-        } else if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            url = "https://$url"
-        }
-
-        webView.loadUrl(url)
-        showBrowserMode()
-    }
-
     override fun onBackPressed() {
-        if (findLayout.visibility == View.VISIBLE) {
-            closeFindMode()
-            return
-        }
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            super.onBackPressed()
-        }
+        handleBackBehavior()
     }
 
     private fun webReset() {
@@ -252,47 +235,6 @@ class MainActivity : Activity() {
             }
             webChromeClient = Chrome(this@MainActivity)
 
-            setOnTouchListener { _, event ->
-                val targetPointers = if (Setting.twoFingerSwipe) 2 else 1
-                if (targetPointers == 1 && webView.scrollY > 0) return@setOnTouchListener false
-
-                when (event.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        if (targetPointers == 1) {
-                            startY1 = event.y
-                            isSwiping = true
-                        }
-                    }
-                    MotionEvent.ACTION_POINTER_DOWN -> {
-                        if (targetPointers == 2 && event.pointerCount == 2) {
-                            startY1 = event.getY(0)
-                            startY2 = event.getY(1)
-                            isSwiping = true
-                        }
-                    }
-                    MotionEvent.ACTION_MOVE -> {
-                        if (isSwiping && event.pointerCount == targetPointers) {
-                            val dy1 = event.getY(0) - startY1
-                            val threshold = 180f
-                            if (targetPointers == 2) {
-                                val dy2 = event.getY(1) - startY2
-                                if (dy1 > threshold && dy2 > threshold) {
-                                    isSwiping = false
-                                    Menu(this@MainActivity).show()
-                                }
-                            } else if (dy1 > threshold) {
-                                isSwiping = false
-                                Menu(this@MainActivity).show()
-                            }
-                        }
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
-                        isSwiping = false
-                    }
-                }
-                false
-            }
-
             setDownloadListener { url, userAgent, contentDisposition, mimetype, _ ->
                 val request = DownloadManager.Request(Uri.parse(url))
                 request.setMimeType(mimetype)
@@ -320,14 +262,7 @@ class MainActivity : Activity() {
 
                 override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
-                    try {
-                        hostCurrent = URL(url).host
-                    } catch (e: MalformedURLException) { }
                     showBrowserMode()
-                }
-
-                override fun onPageFinished(view: WebView, url: String) {
-                    super.onPageFinished(view, url)
                 }
 
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
@@ -351,10 +286,6 @@ class MainActivity : Activity() {
                 }
             }
         }
-    }
-
-    companion object {
-        var hostCurrent: String? = null
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {

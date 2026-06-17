@@ -52,21 +52,33 @@ class Menu(private val main: MainActivity) {
         container.addView(listView)
         container.addView(inputContainer)
 
+        val backButtonText = if (main.webView.canGoBack()) "Page Back" else "Close Browser"
+
         val dialog = AlertDialog.Builder(main)
             .setView(container)
             .setPositiveButton("Go") { _, _ ->
-                main.processSearch(urlInput.text.toString())
-            }
-            .setNeutralButton("Home") { _, _ ->
-                main.webView.loadUrl(Setting.home)
-            }
-            .setNegativeButton("Add") { _, _ ->
-                val url = urlInput.text.toString()
+                var url = urlInput.text.toString().trim()
                 if (url.isNotEmpty()) {
-                    Setting.bookAdd(url)
-                    Toast.makeText(main, "Saved", Toast.LENGTH_SHORT).show()
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        url = "https://$url"
+                    }
+                    main.webView.loadUrl(url)
                 }
             }
+            .setNeutralButton(backButtonText) { _, _ ->
+                if (main.webView.canGoBack()) {
+                    main.webView.goBack()
+                } else {
+                    main.finish()
+                }
+            }
+            .setNegativeButton("Search") { _, _ ->
+                val query = urlInput.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    val host = if (Setting.home.endsWith("/")) Setting.home else "${Setting.home}/"
+                    val url = "${host}?q=$query"
+                    main.webView.loadUrl(url)
+                }            }
             .create()
 
         listView.setOnItemClickListener { _, _, position, _ ->
@@ -80,7 +92,7 @@ class Menu(private val main: MainActivity) {
 
         urlInput.setOnEditorActionListener { _, actionId, _ ->
             if (actionId == EditorInfo.IME_ACTION_GO || actionId == EditorInfo.IME_ACTION_DONE) {
-                main.processSearch(urlInput.text.toString())
+                main.webView.loadUrl(urlInput.text.toString())
                 dialog.dismiss()
                 true
             } else false
@@ -101,7 +113,7 @@ class Menu(private val main: MainActivity) {
         val dialog = AlertDialog.Builder(main)
             .setTitle("Bookmarks")
             .setView(listView)
-            .setPositiveButton("Add Page") { _, _ ->
+            .setPositiveButton("Add Current Page") { _, _ ->
                 val url = main.webView.url
                 if (url != null && url.startsWith("http")) {
                     Setting.bookAdd(url)
@@ -113,7 +125,7 @@ class Menu(private val main: MainActivity) {
 
         listView.setOnItemClickListener { _, _, position, _ ->
             val url = bookList[position]
-            main.processSearch(url)
+            main.webView.loadUrl(url)
             dialog.dismiss()
         }
 
@@ -163,7 +175,6 @@ class Menu(private val main: MainActivity) {
         val inputHost = EditText(main).apply { hint = "Home Page"; setText(Setting.home) }
         val inputDoh = EditText(main).apply { hint = "DNS over HTTPS"; setText(Setting.doh) }
         val checkReset = CheckBox(main).apply { text = "Clear Data on Exit"; isChecked = Setting.reset }
-        val checkTwoFinger = CheckBox(main).apply { text = "2 Finger Swipe Down"; isChecked = Setting.twoFingerSwipe }
         val inputSocksHost = EditText(main).apply { hint = "SOCKS Host"; setText(System.getProperty("socksProxyHost") ?: "") }
         val inputSocksPort = EditText(main).apply { hint = "SOCKS Port"; inputType = InputType.TYPE_CLASS_NUMBER; setText(System.getProperty("socksProxyPort") ?: "") }
 
@@ -173,7 +184,6 @@ class Menu(private val main: MainActivity) {
         layout.addView(inputSocksHost)
         layout.addView(inputSocksPort)
         layout.addView(checkReset)
-        layout.addView(checkTwoFinger)
 
         AlertDialog.Builder(main)
             .setView(layout)
@@ -181,14 +191,12 @@ class Menu(private val main: MainActivity) {
                 Setting.home = inputHost.text.toString()
                 Setting.doh = inputDoh.text.toString()
                 Setting.reset = checkReset.isChecked
-                Setting.twoFingerSwipe = checkTwoFinger.isChecked
 
                 Setting.home = if (Setting.home.startsWith("http")) Setting.home else "http://${Setting.home}"
 
                 Setting.eja.put("home", Setting.home)
                 Setting.eja.put("doh", Setting.doh)
                 Setting.eja.put("reset", Setting.reset)
-                Setting.eja.put("twoFingerSwipe", Setting.twoFingerSwipe)
 
                 val sHost = inputSocksHost.text.toString()
                 val sPort = inputSocksPort.text.toString()
