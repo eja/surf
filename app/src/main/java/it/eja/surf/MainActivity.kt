@@ -165,12 +165,6 @@ class MainActivity : Activity() {
                 Menu(this).show()
                 return true
             }
-            if (event.keyCode == KeyEvent.KEYCODE_DPAD_UP) {
-                if (webView.scrollY == 0) {
-                    Menu(this).show()
-                    return true
-                }
-            }
         }
         return super.dispatchKeyEvent(event)
     }

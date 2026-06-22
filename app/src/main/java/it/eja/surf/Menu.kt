@@ -52,7 +52,7 @@ class Menu(private val main: MainActivity) {
         container.addView(listView)
         container.addView(inputContainer)
 
-        val backButtonText = if (main.webView.canGoBack()) "Page Back" else "Close Browser"
+        val backButtonText = if (main.webView.canGoBack()) "Back" else "Exit"
 
         val dialog = AlertDialog.Builder(main)
             .setView(container)
@@ -113,14 +113,14 @@ class Menu(private val main: MainActivity) {
         val dialog = AlertDialog.Builder(main)
             .setTitle("Bookmarks")
             .setView(listView)
-            .setPositiveButton("Add Current Page") { _, _ ->
+            .setPositiveButton("Add") { _, _ ->
                 val url = main.webView.url
                 if (url != null && url.startsWith("http")) {
                     Setting.bookAdd(url)
                     Toast.makeText(main, "Saved", Toast.LENGTH_SHORT).show()
                 }
             }
-            .setNegativeButton("Back") { _, _ -> show() }
+            .setNegativeButton("Cancel") { _, _ -> show() }
             .create()
 
         listView.setOnItemClickListener { _, _, position, _ ->
