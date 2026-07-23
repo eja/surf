@@ -28,6 +28,8 @@ import android.app.DownloadManager
 import android.os.Environment
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
+import android.os.Build
+import android.window.OnBackInvokedDispatcher
 
 class MainActivity : Activity() {
     private val dnsCache = HashMap<String, String>()
@@ -59,6 +61,14 @@ class MainActivity : Activity() {
             Setting.version = packageManager.getPackageInfo(packageName, 0).versionCode
         } catch (e: Exception) {
             e.printStackTrace()
+        }
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            onBackInvokedDispatcher.registerOnBackInvokedCallback(
+                OnBackInvokedDispatcher.PRIORITY_DEFAULT
+            ) {
+                handleBackBehavior()
+            }
         }
 
         val root = FrameLayout(this)
@@ -157,10 +167,6 @@ class MainActivity : Activity() {
 
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         if (event.action == KeyEvent.ACTION_DOWN) {
-            if (event.keyCode == KeyEvent.KEYCODE_BACK) {
-                handleBackBehavior()
-                return true
-            }
             if (event.keyCode == KeyEvent.KEYCODE_MENU || event.keyCode == KeyEvent.KEYCODE_SEARCH) {
                 Menu(this).show()
                 return true
@@ -194,10 +200,6 @@ class MainActivity : Activity() {
         findLayout.visibility = View.GONE
         imm.hideSoftInputFromWindow(findInput.windowToken, 0)
         toolbarContainer.visibility = View.GONE
-    }
-
-    override fun onBackPressed() {
-        handleBackBehavior()
     }
 
     private fun webReset() {

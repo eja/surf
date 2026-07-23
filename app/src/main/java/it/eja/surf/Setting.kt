@@ -13,8 +13,8 @@ import java.net.URL
 import java.nio.charset.StandardCharsets
 
 object Setting {
-    var home = "http://surf.eja.it"
-    var doh = "http://surf.eja.it"
+    var home = "https://surf.eja.it"
+    var doh = "https://surf.eja.it"
     var path = ""
     var version = 0
     var reset = true

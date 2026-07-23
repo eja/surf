@@ -5,14 +5,14 @@ plugins {
 
 android {
     namespace = "it.eja.surf"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "it.eja.surf"
         minSdk = 24
-        targetSdk = 35
-        versionCode = 25
-        versionName = "5.6.22"
+        targetSdk = 36
+        versionCode = 26
+        versionName = "5.7.23"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

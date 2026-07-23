@@ -8,6 +8,7 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
+import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
@@ -32,7 +33,7 @@ class Menu(private val main: MainActivity) {
 
         val inputContainer = LinearLayout(main).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(20, 0, 20, 20)
+            setPadding(20, 0, 20, 10)
             gravity = Gravity.CENTER_VERTICAL
             val params = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             params.setMargins(0, 0, 0, 0)
@@ -52,11 +53,65 @@ class Menu(private val main: MainActivity) {
         container.addView(listView)
         container.addView(inputContainer)
 
-        val backButtonText = if (main.webView.canGoBack()) "Back" else "Exit"
+        val buttonContainer = LinearLayout(main).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(20, 0, 20, 10)
+            gravity = Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        val leftButtons = LinearLayout(main).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.START
+        }
+
+        val rightButtons = LinearLayout(main).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.END
+            layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1.0f)
+        }
 
         val dialog = AlertDialog.Builder(main)
             .setView(container)
-            .setPositiveButton("Go") { _, _ ->
+            .create()
+
+        val btnExit = Button(main, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "Exit"
+            setOnClickListener {
+                main.finish()
+                dialog.dismiss()
+            }
+        }
+
+        leftButtons.addView(btnExit)
+
+        if (main.webView.canGoBack()) {
+            val btnBack = Button(main, null, android.R.attr.borderlessButtonStyle).apply {
+                text = "Back"
+                setOnClickListener {
+                    main.webView.goBack()
+                    dialog.dismiss()
+                }
+            }
+            leftButtons.addView(btnBack)
+        }
+
+        val btnSearch = Button(main, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "Search"
+            setOnClickListener {
+                val query = urlInput.text.toString().trim()
+                if (query.isNotEmpty()) {
+                    val host = if (Setting.home.endsWith("/")) Setting.home else "${Setting.home}/"
+                    val url = "${host}?q=$query"
+                    main.webView.loadUrl(url)
+                }
+                dialog.dismiss()
+            }
+        }
+
+        val btnGo = Button(main, null, android.R.attr.borderlessButtonStyle).apply {
+            text = "Go"
+            setOnClickListener {
                 var url = urlInput.text.toString().trim()
                 if (url.isNotEmpty()) {
                     if (!url.startsWith("http://") && !url.startsWith("https://")) {
@@ -64,22 +119,17 @@ class Menu(private val main: MainActivity) {
                     }
                     main.webView.loadUrl(url)
                 }
+                dialog.dismiss()
             }
-            .setNeutralButton(backButtonText) { _, _ ->
-                if (main.webView.canGoBack()) {
-                    main.webView.goBack()
-                } else {
-                    main.finish()
-                }
-            }
-            .setNegativeButton("Search") { _, _ ->
-                val query = urlInput.text.toString().trim()
-                if (query.isNotEmpty()) {
-                    val host = if (Setting.home.endsWith("/")) Setting.home else "${Setting.home}/"
-                    val url = "${host}?q=$query"
-                    main.webView.loadUrl(url)
-                }            }
-            .create()
+        }
+
+        rightButtons.addView(btnSearch)
+        rightButtons.addView(btnGo)
+
+        buttonContainer.addView(leftButtons)
+        buttonContainer.addView(rightButtons)
+
+        container.addView(buttonContainer)
 
         listView.setOnItemClickListener { _, _, position, _ ->
             when (position) {
