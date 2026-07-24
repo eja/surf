@@ -157,6 +157,16 @@ class MainActivity : Activity() {
         }
     }
 
+
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun onBackPressed() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            handleBackBehavior()
+        } else {
+            super.onBackPressed()
+        }
+    }
+
     private fun handleBackBehavior() {
         if (findLayout.visibility == View.VISIBLE) {
             closeFindMode()
