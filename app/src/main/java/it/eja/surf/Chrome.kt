@@ -3,6 +3,7 @@
 package it.eja.surf
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.text.InputType
@@ -90,7 +91,7 @@ class Chrome(private val mainActivity: MainActivity) : WebChromeClient() {
         mainActivity.fileUploadCallback = filePathCallback
 
         try {
-            val intent = fileChooserParams?.createIntent()
+            val intent = fileChooserParams?.createIntent() ?: Intent(Intent.ACTION_GET_CONTENT).apply { type = "*/*" }
             mainActivity.startActivityForResult(intent, 100)
         } catch (e: Exception) {
             mainActivity.fileUploadCallback = null

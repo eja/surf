@@ -29,9 +29,10 @@ import android.os.Environment
 import android.webkit.URLUtil
 import android.webkit.ValueCallback
 import android.os.Build
-import android.window.OnBackInvokedDispatcher
+import androidx.activity.ComponentActivity
+import androidx.activity.OnBackPressedCallback
 
-class MainActivity : Activity() {
+class MainActivity : ComponentActivity() {
     private val dnsCache = HashMap<String, String>()
     internal lateinit var webView: WebView
 
@@ -63,13 +64,11 @@ class MainActivity : Activity() {
             e.printStackTrace()
         }
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            onBackInvokedDispatcher.registerOnBackInvokedCallback(
-                OnBackInvokedDispatcher.PRIORITY_DEFAULT
-            ) {
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
                 handleBackBehavior()
             }
-        }
+        })
 
         val root = FrameLayout(this)
         root.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
@@ -154,16 +153,6 @@ class MainActivity : Activity() {
         if (savedInstanceState == null) {
             webView.loadUrl(Setting.home)
             showBrowserMode()
-        }
-    }
-
-
-    @Suppress("OVERRIDE_DEPRECATION")
-    override fun onBackPressed() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-            handleBackBehavior()
-        } else {
-            super.onBackPressed()
         }
     }
 
