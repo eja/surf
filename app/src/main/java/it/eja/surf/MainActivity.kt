@@ -3,16 +3,17 @@
 package it.eja.surf
 
 import android.app.Activity
+import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
-import android.util.Patterns
 import android.view.Gravity
 import android.view.KeyEvent
 import android.view.View
@@ -21,26 +22,19 @@ import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.webkit.*
 import android.widget.*
-import java.net.MalformedURLException
-import java.net.URL
-import java.util.*
-import android.app.DownloadManager
-import android.os.Environment
-import android.webkit.URLUtil
-import android.webkit.ValueCallback
-import android.os.Build
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     private val dnsCache = HashMap<String, String>()
     internal lateinit var webView: WebView
+    private lateinit var swipe: SwipeRefreshLayout
 
     private lateinit var toolbarContainer: FrameLayout
     private lateinit var findLayout: LinearLayout
-
     private lateinit var findInput: EditText
-
     private lateinit var imm: InputMethodManager
 
     var fileUploadCallback: ValueCallback<Array<Uri>>? = null
@@ -75,6 +69,12 @@ class MainActivity : ComponentActivity() {
 
         webView = WebView(this)
         webView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+
+        swipe = SwipeRefreshLayout(this).apply {
+            layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+            addView(webView)
+            setOnRefreshListener { webView.reload() }
+        }
 
         toolbarContainer = FrameLayout(this).apply {
             layoutParams = FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT).apply {
@@ -140,7 +140,7 @@ class MainActivity : ComponentActivity() {
 
         toolbarContainer.addView(findLayout)
 
-        root.addView(webView)
+        root.addView(swipe)
         root.addView(toolbarContainer)
         setContentView(root)
 
@@ -257,7 +257,13 @@ class MainActivity : ComponentActivity() {
 
                 override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
                     super.onPageStarted(view, url, favicon)
+                    swipe.isRefreshing = true
                     showBrowserMode()
+                }
+
+                override fun onPageFinished(view: WebView, url: String) {
+                    super.onPageFinished(view, url)
+                    swipe.isRefreshing = false
                 }
 
                 override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest): WebResourceResponse? {
